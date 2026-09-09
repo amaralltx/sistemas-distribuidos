@@ -47,7 +47,7 @@ def iniciar_consumidor(exchange, exchange_type, nome_fila, routing_keys, callbac
     def callback_interno(ch, method, properties, body):
         print(f"{TAG} Mensagem recebida na fila '{fila_real}' (Routing Key: '{method.routing_key}')")
         
-        # TODO: validar a assinatura digital contida em 'properties.headers'[cite: 1]
+        # TODO: validar a assinatura digital contida em 'properties.headers'
         
         callback_negocio(method.routing_key, body)
         

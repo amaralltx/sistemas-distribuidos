@@ -1,5 +1,5 @@
 # microservicos/ms_principal/main.py
-import json, sys, threading, uuid
+import json, sys, threading, uuid, time
 
 from rabbitmq import Publicador, iniciar_consumidor
 
@@ -102,7 +102,6 @@ def processar_atualizacao_status(routing_key, body_mensagem):
     except Exception as e:
         print(f"{TAG} Erro ao processar evento '{routing_key}': {e}")
 
-
 def iniciar_escuta():
 
     # inscreve o MS Principal nas routing keys
@@ -119,7 +118,6 @@ def iniciar_escuta():
         ],
         callback_negocio=processar_atualizacao_status,
     )
-
 
 def realizar_pedido():
     print("\nCATÁLOGO\n")
@@ -220,6 +218,7 @@ def executar_menu():
         else:
             print("\nOpção inválida. Tente novamente.")
 
+        time.sleep(10)
 
 def main():
     # inicia a escuta de eventos em outra thread

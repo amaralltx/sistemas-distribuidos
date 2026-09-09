@@ -11,7 +11,7 @@ class Publicador:
         self.exchange = exchange
         self.exchange_type = exchange_type
         
-        parametros = pika.ConnectionParameters(host=RABBITMQ_HOST)
+        parametros = pika.ConnectionParameters(host=RABBITMQ_HOST, heartbeat=0)
         self.connection = pika.BlockingConnection(parametros)
         self.channel = self.connection.channel()
         
@@ -29,7 +29,7 @@ class Publicador:
 
 def iniciar_consumidor(exchange, exchange_type, nome_fila, routing_keys, callback_negocio):
 
-    parametros = pika.ConnectionParameters(host=RABBITMQ_HOST)
+    parametros = pika.ConnectionParameters(host=RABBITMQ_HOST, heartbeat=0)
     connection = pika.BlockingConnection(parametros)
     channel = connection.channel()
     
@@ -47,11 +47,11 @@ def iniciar_consumidor(exchange, exchange_type, nome_fila, routing_keys, callbac
     def callback_interno(ch, method, properties, body):
         print(f"{TAG} Mensagem recebida na fila '{fila_real}' (Routing Key: '{method.routing_key}')")
         
-        # TODO: validar a assinatura digital contida em 'properties.headers'[cite: 1]
+        # TODO: validar a assinatura digital contida em 'properties.headers'
         
         callback_negocio(method.routing_key, body)
         
-        # Confirmação manual de processamento
+        # confirmação manual de processamento
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
     channel.basic_consume(queue=fila_real, on_message_callback=callback_interno, auto_ack=False)

@@ -1,6 +1,6 @@
 # microservicos/ms_pagamento/main.py
 
-import random, json, time
+import random, json
 from rabbitmq import Publicador, iniciar_consumidor
 
 # identificador do MS
@@ -10,13 +10,12 @@ TAG = f"\033[91m[MS Pagamento]\033[0m"
 publicador = Publicador(exchange='eCommerce', exchange_type='direct')
 
 def processar_pagamento(routing_key, body_mensagem):
-    # Lendo o pacote para pegar o ID do pedido
+    # lendo o pacote para pegar o ID do pedido
     dados = json.loads(body_mensagem.decode('utf-8'))
     id_pedido = dados.get("id_pedido", "Desconhecido")
     
     print(f"\n{TAG} Processando cobrança para o Pedido #{id_pedido}...")
     
-    time.sleep(2) # Apenas para dar um "charme" de processamento no terminal
     aprovado = random.choice([True, False])
     
     if aprovado:
