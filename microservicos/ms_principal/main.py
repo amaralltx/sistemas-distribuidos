@@ -6,7 +6,7 @@ from rabbitmq import Publicador, iniciar_consumidor
 # indentificador do MS
 TAG = "\033[94m[MS Principal]\033[0m" 
 
-publicador = Publicador(exchange='eCommerce', exchange_type='direct')
+publicador = Publicador(exchange='eCommerce', exchange_type='direct', nome_remetente='principal')
 
 # dict dos produtos
 PRODUTOS = {
@@ -62,6 +62,12 @@ class RepositorioPedidos:
         with self._lock:
             return dict(self._pedidos)
 
+    def remover(self, id_pedido):
+        with self._lock:
+            if id_pedido in self._pedidos:
+                del self._pedidos[id_pedido]
+                return True
+            return False
 pedidos_db = RepositorioPedidos()
 
 # consome os eventos de atualização e altera o status do pedido
@@ -74,7 +80,7 @@ def processar_atualizacao_status(routing_key, body_mensagem):
             return
 
         print(
-            f"\n{TAG} Evento recebido: '{routing_key}' para Pedido #{id_pedido}"
+            f"{TAG} Evento recebido: '{routing_key}' para Pedido #{id_pedido}"
         )
 
         # mapeamento das routing keys e suas mensagens
@@ -90,13 +96,14 @@ def processar_atualizacao_status(routing_key, body_mensagem):
         if novo_status:
             pedidos_db.atualizar_status(id_pedido, novo_status)
             pedido = pedidos_db.obter(id_pedido)
-            print(f"{TAG} Status atual: \033[1m{pedido['status']}\033[0m")
+            print(f"{TAG} Status atual: {pedido['status']}")
 
         # emite pedido.excluido quando há falha no fluxo
         if routing_key in ['estoque.indisponivel', 'pagamento.recusado']:
             print(
                 f"{TAG} Emitindo 'pedido.excluido' para o Pedido #{id_pedido}..."
             )
+            pedidos_db.remover(id_pedido)
             publicador.publicar('pedido.excluido', body_mensagem)
 
     except Exception as e:
@@ -117,6 +124,7 @@ def iniciar_escuta():
             'estoque.indisponivel',
         ],
         callback_negocio=processar_atualizacao_status,
+        nome_consumidor='MS Principal'
     )
 
 def realizar_pedido():
@@ -187,24 +195,24 @@ def excluir_pedido():
         print(f"{TAG} Pedido não encontrado.")
         return
 
-    if "Cancelado" in pedido["status"]:
-        print(f"{TAG} Este pedido já está cancelado.")
-        return
-
-    pedidos_db.atualizar_status(id_pedido, "Cancelado pelo Usuário")
+    # publica o evento para que o MS Estoque saiba que precisa devolver os itens
     payload = json.dumps({"id_pedido": id_pedido})
     publicador.publicar('pedido.excluido', payload)
-    print(f"{TAG} Pedido #{id_pedido} cancelado.")
+    
+    # remove do dict local
+    pedidos_db.remover(id_pedido)
+    
+    print(f"{TAG} Pedido #{id_pedido} cancelado e removido do sistema.")
 
 def executar_menu():
     while True:
         print("\nMENU\n")
         print("1. Realizar pedido")
         print("2. Excluir pedido")
-        print("3. Consultar pedidos e status")
+        print("3. Consultar pedidos")
         print("0. Sair")
         
-        opcao = input("Escolha uma opção: ").strip()
+        opcao = input("\nEscolha uma opção: ").strip()
         
         if opcao == "1":
             realizar_pedido()
@@ -216,9 +224,9 @@ def executar_menu():
             print(f"{TAG} Encerrando MS Principal...")
             sys.exit(0)
         else:
-            print("\nOpção inválida. Tente novamente.")
+            print(f"{TAG} Opção inválida. Tente novamente.")
 
-        time.sleep(10)
+        time.sleep(5)
 
 def main():
     # inicia a escuta de eventos em outra thread

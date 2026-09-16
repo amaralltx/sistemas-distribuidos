@@ -1,11 +1,9 @@
-# microservicos/ms_estoque/main.py
-
 import json
 from rabbitmq import Publicador, iniciar_consumidor
 
 TAG = "\033[92m[MS Estoque]\033[0m"
 
-publicador = Publicador(exchange='eCommerce', exchange_type='direct')
+publicador = Publicador(exchange='eCommerce', exchange_type='direct', nome_remetente='estoque')
 
 # dict dos produtos e suas quantidades em estoque
 ESTOQUE = {
@@ -35,7 +33,7 @@ ESTOQUE = {
 }
 
 def processar_evento_estoque(routing_key, body_mensagem):
-    print(f"\n{TAG} Evento recebido: {routing_key}")
+    print(f"{TAG} Evento recebido: {routing_key}")
     
     # decodifica a mensagem que veio do RabbitMQ
     dados = json.loads(body_mensagem.decode('utf-8'))
@@ -86,5 +84,6 @@ if __name__ == '__main__':
         exchange_type='direct',
         nome_fila='fila_estoque',
         routing_keys=['pedido.criado', 'pedido.excluido'],
-        callback_negocio=processar_evento_estoque
+        callback_negocio=processar_evento_estoque,
+        nome_consumidor='MS Estoque'
     )

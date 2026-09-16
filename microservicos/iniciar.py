@@ -11,8 +11,6 @@ pastas_ms = [
     "ms_principal"
 ]
 
-print("Iniciando o ecossistema de microsserviços em janelas separadas...\n")
-
 base_dir = os.path.abspath(os.getcwd())
 
 for pasta in pastas_ms:
@@ -28,5 +26,3 @@ for pasta in pastas_ms:
     # Mudamos para subprocess.run para capturar melhor a execução
     subprocess.run(['osascript', '-e', comando_applescript])
     time.sleep(1.5)
-
-print("\nTodos os serviços foram lançados!")
