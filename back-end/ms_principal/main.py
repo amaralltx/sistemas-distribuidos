@@ -1,40 +1,50 @@
 # microservicos/ms_principal/main.py
 import json, sys, threading, uuid, time
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from rabbitmq import Publicador, iniciar_consumidor
 
-# indentificador do MS
+# Identificador do MS para logs
 TAG = "\033[94m[MS Principal]\033[0m" 
 
+# Publicador RabbitMQ
 publicador = Publicador(exchange='eCommerce', exchange_type='direct', nome_remetente='principal')
 
-# dict dos produtos
+# Catálogo fixo em memória conforme solicitado para a primeira etapa
+CATALOGO_INICIAL = [
+    # (codigo, nome, preco, quantidade, categoria, imagem)
+    ("1", "Vestido Floral", 120.00, 10, "Feminino", "https://exemplo.com/imagens/vestido-floral.jpg"),
+    ("2", "Blusa de Seda", 89.90, 10, "Feminino", "https://exemplo.com/imagens/blusa-seda.jpg"),
+    ("3", "Calça Jeans Skinny", 150.00, 10, "Feminino", "https://exemplo.com/imagens/calca-jeans-skinny.jpg"),
+    ("4", "Saia Midi", 95.00, 10, "Feminino", "https://exemplo.com/imagens/saia-midi.jpg"),
+    ("5", "Casaco de Lã", 250.00, 10, "Feminino", "https://exemplo.com/imagens/casaco-la.jpg"),
+    ("6", "T-shirt Básica Feminina", 45.00, 10, "Feminino", "https://exemplo.com/imagens/t-shirt-basica.jpg"),
+    ("7", "Macacão Pantalona", 180.00, 10, "Feminino", "https://exemplo.com/imagens/macacao-pantalona.jpg"),
+    ("8", "Camiseta de Algodão", 50.00, 10, "Masculino", "https://exemplo.com/imagens/camiseta-algodao.jpg"),
+    ("9", "Calça Sarja", 130.00, 10, "Masculino", "https://exemplo.com/imagens/calca-sarja.jpg"),
+    ("10", "Camisa Social Branca", 110.00, 10, "Masculino", "https://exemplo.com/imagens/camisa-social.jpg"),
+    ("11", "Jaqueta de Couro", 300.00, 10, "Masculino", "https://exemplo.com/imagens/jaqueta-couro.jpg"),
+    ("12", "Bermuda Moletom", 70.00, 10, "Masculino", "https://exemplo.com/imagens/bermuda-moletom.jpg"),
+    ("13", "Suéter de Tricô", 140.00, 10, "Masculino", "https://exemplo.com/imagens/sueter-trico.jpg"),
+    ("14", "Terno Slim Fit", 450.00, 10, "Masculino", "https://exemplo.com/imagens/terno-slim.jpg"),
+    ("15", "Conjunto Moletom Infantil", 85.00, 10, "Infantil", "https://exemplo.com/imagens/conjunto-moletom.jpg"),
+    ("16", "Vestido de Festa Infantil", 110.00, 10, "Infantil", "https://exemplo.com/imagens/vestido-festa.jpg"),
+    ("17", "Camiseta Estampa Dinossauro", 40.00, 10, "Infantil", "https://exemplo.com/imagens/camiseta-dinossauro.jpg"),
+    ("18", "Calça Jeans Kids", 90.00, 10, "Infantil", "https://exemplo.com/imagens/calca-jeans-kids.jpg"),
+    ("19", "Pijama Brilha no Escuro", 65.00, 10, "Infantil", "https://exemplo.com/imagens/pijama-brilha.jpg"),
+    ("20", "Jaqueta Corta-Vento Infantil", 100.00, 10, "Infantil", "https://exemplo.com/imagens/jaqueta-corta-vento.jpg"),
+]
+
+# Dicionário auxiliar derivado para busca rápida de produtos por código
 PRODUTOS = {
-    # Categoria: Feminino
-    "1": {"nome": "Vestido Floral", "preco": 120.00, "categoria": "Feminino"},
-    "2": {"nome": "Blusa de Seda", "preco": 89.90, "categoria": "Feminino"},
-    "3": {"nome": "Calça Jeans Skinny", "preco": 150.00, "categoria": "Feminino"},
-    "4": {"nome": "Saia Midi", "preco": 95.00, "categoria": "Feminino"},
-    "5": {"nome": "Casaco de Lã", "preco": 250.00, "categoria": "Feminino"},
-    "6": {"nome": "T-shirt Básica Feminina", "preco": 45.00, "categoria": "Feminino"},
-    "7": {"nome": "Macacão Pantalona", "preco": 180.00, "categoria": "Feminino"},
-
-    # Categoria: Masculino
-    "8": {"nome": "Camiseta de Algodão", "preco": 50.00, "categoria": "Masculino"},
-    "9": {"nome": "Calça Sarja", "preco": 130.00, "categoria": "Masculino"},
-    "10": {"nome": "Camisa Social Branca", "preco": 110.00, "categoria": "Masculino"},
-    "11": {"nome": "Jaqueta de Couro", "preco": 300.00, "categoria": "Masculino"},
-    "12": {"nome": "Bermuda Moletom", "preco": 70.00, "categoria": "Masculino"},
-    "13": {"nome": "Suéter de Tricô", "preco": 140.00, "categoria": "Masculino"},
-    "14": {"nome": "Terno Slim Fit", "preco": 450.00, "categoria": "Masculino"},
-
-    # Categoria: Infantil
-    "15": {"nome": "Conjunto Moletom Infantil", "preco": 85.00, "categoria": "Infantil"},
-    "16": {"nome": "Vestido de Festa Infantil", "preco": 110.00, "categoria": "Infantil"},
-    "17": {"nome": "Camiseta Estampa Dinossauro", "preco": 40.00, "categoria": "Infantil"},
-    "18": {"nome": "Calça Jeans Kids", "preco": 90.00, "categoria": "Infantil"},
-    "19": {"nome": "Pijama Brilha no Escuro", "preco": 65.00, "categoria": "Infantil"},
-    "20": {"nome": "Jaqueta Corta-Vento Infantil", "preco": 100.00, "categoria": "Infantil"}
+    item[0]: {
+        "nome": item[1],
+        "preco": item[2],
+        "quantidade": item[3],
+        "categoria": item[4],
+        "imagem": item[5]
+    }
+    for item in CATALOGO_INICIAL
 }
 
 class RepositorioPedidos:
@@ -47,7 +57,6 @@ class RepositorioPedidos:
             self._pedidos[id_pedido] = dados_pedido
 
     def atualizar_status(self, id_pedido, novo_status):
-        # trava para evitar race condition 
         with self._lock:
             if id_pedido in self._pedidos:
                 self._pedidos[id_pedido]["status"] = novo_status
@@ -68,10 +77,11 @@ class RepositorioPedidos:
                 del self._pedidos[id_pedido]
                 return True
             return False
+
 pedidos_db = RepositorioPedidos()
 
-# consome os eventos de atualização e altera o status do pedido
 def processar_atualizacao_status(routing_key, body_mensagem):
+    """Consome os eventos de atualização dos outros microsserviços e altera o status do pedido em memória."""
     try:
         dados = json.loads(body_mensagem.decode('utf-8'))
         id_pedido = dados.get("id_pedido")
@@ -79,11 +89,9 @@ def processar_atualizacao_status(routing_key, body_mensagem):
         if not pedidos_db.obter(id_pedido):
             return
 
-        print(
-            f"{TAG} Evento recebido: '{routing_key}' para Pedido #{id_pedido}"
-        )
+        print(f"{TAG} Evento recebido do RabbitMQ: '{routing_key}' para Pedido #{id_pedido}")
 
-        # mapeamento das routing keys e suas mensagens
+        # Mapeamento das routing keys para mensagens amigáveis
         status_map = {
             'pedido.estoque_ok': "Estoque Reservado. Aguardando Pagamento.",
             'estoque.indisponivel': "Estoque Indisponível. Pedido Cancelado.",
@@ -96,9 +104,9 @@ def processar_atualizacao_status(routing_key, body_mensagem):
         if novo_status:
             pedidos_db.atualizar_status(id_pedido, novo_status)
             pedido = pedidos_db.obter(id_pedido)
-            print(f"{TAG} Status atual: {pedido['status']}")
+            print(f"{TAG} Status do Pedido #{id_pedido} atualizado para: '{pedido['status']}'")
 
-        # emite pedido.excluido quando há falha no fluxo
+        # Emite pedido.excluido para o RabbitMQ quando há falha no fluxo
         if routing_key in ['estoque.indisponivel', 'pagamento.recusado']:
             print(f"{TAG} Emitindo 'pedido.excluido' para o Pedido #{id_pedido}...")
             pedidos_db.remover(id_pedido)
@@ -108,8 +116,7 @@ def processar_atualizacao_status(routing_key, body_mensagem):
         print(f"{TAG} Erro ao processar evento '{routing_key}': {e}")
 
 def iniciar_escuta():
-
-    # inscreve o MS Principal nas routing keys
+    """Inscricão do MS Principal nas routing keys dos demais microsserviços."""
     iniciar_consumidor(
         exchange='eCommerce',
         exchange_type='direct',
@@ -125,119 +132,101 @@ def iniciar_escuta():
         nome_consumidor='MS Principal'
     )
 
-def realizar_pedido():
-    print("\nCATÁLOGO\n")
-    for codigo, info in PRODUTOS.items():
-        print(f"[{codigo}] {info['nome']} - R$ {info['preco']:.2f} (Categoria: {info['categoria']})")
-    
-    codigo = input("\nDigite o código do produto para comprar: ").strip()
-    if codigo not in PRODUTOS:
-        print(f"{TAG} Código de produto inválido.")
-        return
+# Configuração do Flask
+app = Flask(__name__)
+CORS(app)  # Permite que o frontend web faça requisições AJAX/Fetch para esta API
 
-    try:
-        quantidade = int(input("Digite a quantidade: "))
-        if quantidade <= 0:
-            print(f"{TAG} A quantidade deve ser maior que zero.")
-            return
-    except ValueError:
-        print(f"{TAG} Entrada de quantidade inválida.")
-        return
+@app.route('/produtos', methods=['GET'])
+def listar_produtos():
+    """Endpoint REST que disponibiliza a lista de produtos formatada em JSON para o frontend."""
+    lista_formatada = [
+        {
+            "codigo": item[0],
+            "nome": item[1],
+            "preco": item[2],
+            "quantidade": item[3],
+            "categoria": item[4],
+            "imagem": item[5]
+        }
+        for item in CATALOGO_INICIAL
+    ]
+    return jsonify(lista_formatada), 200
 
-    id_pedido = str(uuid.uuid4())[:8] # gera um ID curto para o pedido
-    item = PRODUTOS[codigo]
+@app.route('/pedidos', methods=['POST'])
+def criar_pedido():
+    """Endpoint REST para receber os itens do carrinho e iniciar o processamento do pedido."""
+    dados = request.get_json()
 
-    # prepara o payload para o pedido
-    payload = {
-        "id_pedido": id_pedido,
-        "produtos": [{
+    if not dados or 'itens' not in dados or not dados['itens']:
+        return jsonify({"erro": "O pedido deve conter uma lista de itens."}), 400
+
+    itens_req = dados['itens']
+    produtos_payload = []
+    valor_total = 0.0
+
+    # estruturação e validação dos itens do carrinho
+    for item in itens_req:
+        codigo = str(item.get('id') or item.get('codigo'))
+        quantidade = int(item.get('quantity') or item.get('quantidade', 1))
+        info_prod = PRODUTOS.get(codigo)
+        nome = item.get('name') or item.get('nome') or (info_prod['nome'] if info_prod else 'Produto')
+        preco = float(item.get('price') or item.get('preco') or (info_prod['preco'] if info_prod else 0.0))
+        categoria = item.get('category') or item.get('categoria') or (info_prod['categoria'] if info_prod else 'Geral')
+
+        valor_total += preco * quantidade
+
+        produtos_payload.append({
             "codigo": codigo,
-            "nome": item["nome"],
+            "nome": nome,
             "quantidade": quantidade,
-            "preco_unitario": item["preco"],
-            "categoria": item["categoria"],
-        }],
-        "valor_total": item["preco"] * quantidade,
-    }
+            "preco_unitario": preco,
+            "categoria": categoria
+        })
 
+    # gera um id pro pedido
+    id_pedido = str(uuid.uuid4())[:8]
+
+    # salva o pedido localmente no MS_Principal
     pedidos_db.salvar(
         id_pedido,
         {
-            "itens": payload["produtos"],
-            "valor_total": payload["valor_total"],
+            "itens": produtos_payload,
+            "valor_total": valor_total,
             "status": "Criado",
-        },
+        }
     )
 
-    # publica o evento de criação do pedido
-    publicador.publicar('pedido.criado', json.dumps(payload))
-    print(f"{TAG} Pedido #{id_pedido} criado com sucesso e publicado!")
+    # monta o payload para o RabbitMQ
+    payload_evento = {
+        "id_pedido": id_pedido,
+        "produtos": produtos_payload,
+        "valor_total": valor_total
+    }
 
-def consultar_pedidos():
-    pedidos = pedidos_db.listar_todos()
-    if not pedidos:
-        print(f"\n{TAG} Nenhum pedido registrado.")
-        return
+    # publica o evento 'pedido.criado' no RabbitMQ para o MS_Estoque
+    try:
+        publicador.publicar('pedido.criado', json.dumps(payload_evento))
+        print(f"{TAG} Pedido #{id_pedido} criado e publicado no RabbitMQ com sucesso!")
+    except Exception as e:
+        print(f"{TAG} Pedido #{id_pedido} salvo localmente, mas falhou ao publicar no RabbitMQ: {e}")
 
-    print("\nPEDIDOS\n")
-    for id_p, info in pedidos.items():
-        print(f"ID: #{id_p} | Status: {info['status']} | Total: R$ {info['valor_total']:.2f}")
-        for item in info["itens"]:
-            print(f"   - {item['quantidade']}x {item['nome']}")
-
-def excluir_pedido():
-    id_pedido = input("\nDigite o ID do pedido que deseja excluir: ").strip()
-    pedido = pedidos_db.obter(id_pedido)
-    
-    if not pedido:
-        print(f"{TAG} Pedido não encontrado.")
-        return
-
-    # publica o evento para que o MS Estoque saiba que precisa devolver os itens
-    payload = json.dumps({"id_pedido": id_pedido})
-    publicador.publicar('pedido.excluido', payload)
-    
-    # remove do dict local
-    pedidos_db.remover(id_pedido)
-    
-    print(f"{TAG} Pedido #{id_pedido} cancelado e removido do sistema.")
-
-def executar_menu():
-    while True:
-        print("\nMENU\n")
-        print("1. Realizar pedido")
-        print("2. Excluir pedido")
-        print("3. Consultar pedidos")
-        print("0. Sair")
-        
-        opcao = input("\nEscolha uma opção: ").strip()
-        
-        if opcao == "1":
-            realizar_pedido()
-        elif opcao == "2":
-            excluir_pedido()
-        elif opcao == "3":
-            consultar_pedidos()
-        elif opcao == "0":
-            print(f"{TAG} Encerrando MS Principal...")
-            sys.exit(0)
-        else:
-            print(f"{TAG} Opção inválida. Tente novamente.")
-
-        time.sleep(5)
+    # retorna o ID do pedido gerado para o front-end acompanhar via SSE
+    return jsonify({
+        "id_pedido": id_pedido,
+        "status": "Criado",
+        "valor_total": valor_total,
+        "mensagem": "Pedido recebido com sucesso!"
+    }), 201
 
 def main():
-    # inicia a escuta de eventos em outra thread
+    #inicia o consumidor do RabbitMQ em uma thread em segundo plano
     thread_consumidor = threading.Thread(target=iniciar_escuta, daemon=True)
     thread_consumidor.start()
-    app = Flask(__name__)
+    print(f"{TAG} Thread de escuta do RabbitMQ iniciada em segundo plano.")
 
-    @app.route('/items', methods=['GET'])
-    def get_items():
-        return jsonify(PRODUTOS), 200
-
-    # recebe o input do usuário na thread principal
-    executar_menu()
+    # inicia o servidor da API REST com Flask na thread principal
+    print(f"{TAG} Rodando API Gateway HTTP na porta 5000...")
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 if __name__ == '__main__':
     main()
