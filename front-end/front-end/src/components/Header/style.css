@@ -1,0 +1,109 @@
+/* Header.css */
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 32px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-family: sans-serif;
+}
+
+.header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;  
+  margin: 0 auto;
+}
+
+/* Lado Esquerdo / Central: Logo e Navegação */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  text-decoration: none;
+  letter-spacing: -0.5px;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav-link {
+  color: #4b5563;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #2563eb;
+}
+
+/* Lado Direito: Ações (Carrinho) */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-cart-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #374151;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.header-cart-button:hover {
+  background-color: #f3f4f6;
+  color: #2563eb;
+}
+
+.header-cart-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.header-cart-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Badge indicadora de quantidade no carrinho */
+.cart-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
