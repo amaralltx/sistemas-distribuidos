@@ -1,6 +1,6 @@
 # microservicos/ms_principal/main.py
-import json, sys, threading, uuid, time
-from flask import Flask, jsonify, request
+import json, sys, threading, uuid, time, queue
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 from rabbitmq import Publicador, iniciar_consumidor
 
@@ -80,8 +80,37 @@ class RepositorioPedidos:
 
 pedidos_db = RepositorioPedidos()
 
+# Estrutura de gerenciamento de ouvintes SSE por pedido
+sse_subscribers = {}
+sse_lock = threading.Lock()
+
+def registrar_subscritor(id_pedido):
+    """Cria e registra uma fila de eventos para a conexão SSE de um pedido."""
+    q = queue.Queue()
+    with sse_lock:
+        if id_pedido not in sse_subscribers:
+            sse_subscribers[id_pedido] = []
+        sse_subscribers[id_pedido].append(q)
+    return q
+
+def desregistrar_subscritor(id_pedido, q):
+    """Remove a fila de eventos quando a conexão do cliente é fechada."""
+    with sse_lock:
+        if id_pedido in sse_subscribers:
+            if q in sse_subscribers[id_pedido]:
+                sse_subscribers[id_pedido].remove(q)
+            if not sse_subscribers[id_pedido]:
+                del sse_subscribers[id_pedido]
+
+def notificar_sse(id_pedido, dados_evento):
+    """Encaminha o novo status do pedido para todas as conexões SSE ativas do pedido."""
+    with sse_lock:
+        if id_pedido in sse_subscribers:
+            for q in sse_subscribers[id_pedido]:
+                q.put(dados_evento)
+                
 def processar_atualizacao_status(routing_key, body_mensagem):
-    """Consome os eventos de atualização dos outros microsserviços e altera o status do pedido em memória."""
+    """Consome os eventos do RabbitMQ, atualiza o status do pedido e dispara notificação SSE."""
     try:
         dados = json.loads(body_mensagem.decode('utf-8'))
         id_pedido = dados.get("id_pedido")
@@ -91,7 +120,6 @@ def processar_atualizacao_status(routing_key, body_mensagem):
 
         print(f"{TAG} Evento recebido do RabbitMQ: '{routing_key}' para Pedido #{id_pedido}")
 
-        # Mapeamento das routing keys para mensagens amigáveis
         status_map = {
             'pedido.estoque_ok': "Estoque Reservado. Aguardando Pagamento.",
             'estoque.indisponivel': "Estoque Indisponível. Pedido Cancelado.",
@@ -106,7 +134,13 @@ def processar_atualizacao_status(routing_key, body_mensagem):
             pedido = pedidos_db.obter(id_pedido)
             print(f"{TAG} Status do Pedido #{id_pedido} atualizado para: '{pedido['status']}'")
 
-        # Emite pedido.excluido para o RabbitMQ quando há falha no fluxo
+            # Emite atualização via SSE para o front-end em tempo real
+            notificar_sse(id_pedido, {
+                "id_pedido": id_pedido,
+                "status": pedido["status"],
+                "routing_key": routing_key
+            })
+
         if routing_key in ['estoque.indisponivel', 'pagamento.recusado']:
             print(f"{TAG} Emitindo 'pedido.excluido' para o Pedido #{id_pedido}...")
             pedidos_db.remover(id_pedido)
@@ -217,6 +251,44 @@ def criar_pedido():
         "valor_total": valor_total,
         "mensagem": "Pedido recebido com sucesso!"
     }), 201
+
+# Endpoint de SSE para o front-end acompanhar o pedido em tempo real
+@app.route('/pedidos/<id_pedido>/sse', methods=['GET'])
+def sse_pedido(id_pedido):
+    """Stream de eventos SSE para atualizações de status do pedido."""
+    def stream():
+        q = registrar_subscritor(id_pedido)
+        
+        # Envia o status inicial assim que o cliente conecta
+        pedido = pedidos_db.obter(id_pedido)
+        if pedido:
+            payload_inicial = json.dumps({
+                "id_pedido": id_pedido,
+                "status": pedido["status"]
+            })
+            yield f"data: {payload_inicial}\n\n"
+        
+        try:
+            while True:
+                try:
+                    # Aguarda novos eventos gerados pelas mensagens do RabbitMQ
+                    dados = q.get(timeout=15)
+                    yield f"data: {json.dumps(dados)}\n\n"
+                except queue.Empty:
+                    # Envia um comentário keep-alive para manter a conexão HTTP ativa
+                    yield ": keep-alive\n\n"
+        finally:
+            desregistrar_subscritor(id_pedido, q)
+
+    return Response(
+        stream(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Access-Control-Allow-Origin': '*'
+        }
+    )
 
 def main():
     #inicia o consumidor do RabbitMQ em uma thread em segundo plano
