@@ -3,7 +3,6 @@ import { Header } from "./components/Header/Header";
 import { ProductSlider } from "./components/ProductSlider/ProductSlider";
 import { Cart, type CartItem } from "./components/Cart/Cart";
 import { Newsletter } from "./components/Newsletter/Newsletter";
-import { OrderTracking } from "./components/OrderStatusConsole/OrderStatusConsole";
 import {
   getProducts,
   createOrder,
@@ -54,9 +53,46 @@ export default function App() {
     loadCatalog();
 
     return () => {
-      isMounted = false; // Previne vazamento de memória em desmontagem do componente
+      isMounted = false;
     };
   }, []);
+
+  // Escuta os eventos SSE via console
+  useEffect(() => {
+    if (!lastOrderId) return;
+
+    const sseUrl = `http://localhost:5000/pedidos/${lastOrderId}/sse`;
+    console.log(`%c[SSE] Conectando ao canal do Pedido #${lastOrderId}...`, "color: #3b82f6; font-weight: bold;");
+
+    const eventSource = new EventSource(sseUrl);
+
+    eventSource.onopen = () => {
+      console.log(`%c[SSE] Conexão aberta com sucesso para o Pedido #${lastOrderId}`, "color: #10b981; font-weight: bold;");
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log(
+          `%c[SSE STATUS - Pedido #${lastOrderId}]%c ${data.status || JSON.stringify(data)}`,
+          "background: #1e293b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-weight: bold;",
+          "color: #f8fafc; font-weight: bold;"
+        );
+      } catch (e) {
+        console.log(`[SSE Raw Data - Pedido #${lastOrderId}]:`, event.data);
+      }
+    };
+
+    eventSource.onerror = (err) => {
+      console.warn(`[SSE] Erro de conexão ou reconectando ao canal do Pedido #${lastOrderId}...`, err);
+    };
+
+    // Função de limpeza ao desmontar ou trocar de pedido
+    return () => {
+      console.log(`%c[SSE] Encerrando conexão do Pedido #${lastOrderId}`, "color: #ef4444;");
+      eventSource.close();
+    };
+  }, [lastOrderId]);
 
   const totalCartCount = cartItems.reduce(
     (acc, item) => acc + item.quantity,
@@ -64,7 +100,6 @@ export default function App() {
   );
 
   const handleAddToCart = (productId: string | number) => {
-    // Busca na lista dinâmica carregada da API
     const productToAdd = products.find(
       (p) => String(p.id) === String(productId),
     );
@@ -115,13 +150,11 @@ export default function App() {
     try {
       setIsSubmittingOrder(true);
 
-      // chamada REST POST /pedidos
       const result = await createOrder(cartItems);
 
-      // Define o ID do pedido retornado pelo MS_Principal para o componente de acompanhamento
+      // Define o ID do pedido para disparar o useEffect com o SSE
       setLastOrderId(result.id_pedido);
 
-      // Limpa o carrinho e fecha o modal
       setCartItems([]);
       setIsCartOpen(false);
     } catch (err) {
@@ -144,7 +177,6 @@ export default function App() {
       />
 
       <main>
-        {/* Tratamento visual de Estados (Loading, Erro, Sucesso) */}
         {isLoading && (
           <div
             style={{ textAlign: "center", padding: "40px", fontSize: "1.2rem" }}
@@ -172,17 +204,7 @@ export default function App() {
             onBuyProduct={handleAddToCart}
           />
         )}
-
         <Newsletter />
-
-        {lastOrderId && (
-          <div>
-            <h2 style={{ fontFamily: "sans-serif", color: "#1f2937" }}>
-              Acompanhe seu pedido
-            </h2>
-            <OrderTracking orderId={lastOrderId} />
-          </div>
-        )}
 
         <div
           style={{ height: "100px", marginTop: "40px", textAlign: "center" }}
