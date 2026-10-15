@@ -67,7 +67,6 @@ export const Header: React.FC<HeaderProps> = ({
           className="header-cart-button"
           aria-label="Abrir carrinho de compras"
         >
-          {/* Ícone de Carrinho (SVG inline) */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="header-cart-icon"
@@ -83,7 +82,6 @@ export const Header: React.FC<HeaderProps> = ({
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
 
-          {/* Badge de quantidade de itens (exibe apenas se houver itens no carrinho) */}
           {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
         </button>
       </div>

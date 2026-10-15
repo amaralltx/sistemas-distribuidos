@@ -3,9 +3,9 @@ import './style.css';
 
 export interface CartItem {
   id: string | number;
-  name: string;
-  price: number;
-  imageUrl: string;
+  nome: string;
+  preco: number;
+  imagem: string;
   quantity: number;
 }
 
@@ -16,6 +16,7 @@ interface CartProps {
   onUpdateQuantity: (id: string | number, delta: number) => void;
   onRemoveItem: (id: string | number) => void;
   onCheckout: () => void;
+  isSubmittingOrder: boolean;
 }
 
 export const Cart: React.FC<CartProps> = ({
@@ -25,10 +26,11 @@ export const Cart: React.FC<CartProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onCheckout,
+  isSubmittingOrder,
 }) => {
   //valor total do pedido
   const totalAmount = items.reduce(
-    (acc, item) => acc + item.price * item.quantity,
+    (acc, item) => acc + item.preco * item.quantity,
     0
   );
 
@@ -59,18 +61,18 @@ export const Cart: React.FC<CartProps> = ({
             items.map((item) => (
               <div key={item.id} className="cart-item">
                 <img
-                  src={item.imageUrl}
-                  alt={item.name}
+                  src={item.imagem}
+                  alt={item.nome}
                   className="cart-item-image"
                 />
 
                 <div className="cart-item-info">
-                  <h4 className="cart-item-name">{item.name}</h4>
+                  <h4 className="cart-item-name">{item.nome}</h4>
                   <p className="cart-item-price">
                     {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
-                    }).format(item.price)}
+                    }).format(item.preco)}
                   </p>
 
                   <div className="quantity-controls">
@@ -109,10 +111,10 @@ export const Cart: React.FC<CartProps> = ({
 
           <button
             className="checkout-button"
-            disabled={items.length === 0}
+            disabled={items.length === 0 || isSubmittingOrder}
             onClick={onCheckout}
           >
-            Finalizar Compra
+            {isSubmittingOrder ? "Processando..." : "Finalizar Compra"}
           </button>
         </div>
       </aside>

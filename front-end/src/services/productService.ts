@@ -8,10 +8,10 @@ export interface Product {
   imagem: string;
 }
 
-const API_BASE_URL = 'http://localhost:5000';
+const MS_PRINCIPAL_URL = 'http://localhost:5000';
 
 export async function getProducts(): Promise<Product[]> {
-  const response = await fetch(`${API_BASE_URL}/produtos`);
+  const response = await fetch(`${MS_PRINCIPAL_URL}/produtos`);
 
   if (!response.ok) {
     throw new Error(`Erro ao carregar catálogo (${response.status})`);
@@ -21,7 +21,7 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function createOrder(cartItems: CartItem[]): Promise<{ id_pedido: string; status: string; valor_total: number }> {
-  const response = await fetch(`${API_BASE_URL}/pedidos`, {
+  const response = await fetch(`${MS_PRINCIPAL_URL}/pedidos`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

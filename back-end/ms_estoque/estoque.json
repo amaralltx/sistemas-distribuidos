@@ -1,0 +1,170 @@
+{
+  "produtos": {
+    "1": {
+      "id": "1",
+      "nome": "Vestido Floral",
+      "preco": 120.0,
+      "quantidade": 10,
+      "categoria": "Feminino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1723535671118-ae4028123e40?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "2": {
+      "id": "2",
+      "nome": "Blusa de Seda",
+      "preco": 89.9,
+      "quantidade": 10,
+      "categoria": "Feminino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1673384389447-5a4364e7c93b?q=80&w=388&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "3": {
+      "id": "3",
+      "nome": "Calça Jeans Skinny",
+      "preco": 150.0,
+      "quantidade": 10,
+      "categoria": "Feminino",
+      "imagem": "https://images.unsplash.com/photo-1714143136372-ddaf8b606da7?q=80&w=580&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "4": {
+      "id": "4",
+      "nome": "Saia Midi",
+      "preco": 95.0,
+      "quantidade": 10,
+      "categoria": "Feminino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1674129670339-554be9059cf4?q=80&w=674&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "5": {
+      "id": "5",
+      "nome": "Casaco de Lã",
+      "preco": 250.0,
+      "quantidade": 10,
+      "categoria": "Feminino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1671460923085-f7ec58f56b28?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "6": {
+      "id": "6",
+      "nome": "T-shirt Básica Feminina",
+      "preco": 45.0,
+      "quantidade": 0,
+      "categoria": "Feminino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1755034663782-3902ccfae2d4?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "7": {
+      "id": "7",
+      "nome": "Macacão Pantalona",
+      "preco": 180.0,
+      "quantidade": 0,
+      "categoria": "Feminino",
+      "imagem": "https://images.unsplash.com/photo-1591954289868-8f356bf1d102?q=80&w=465&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "8": {
+      "id": "8",
+      "nome": "Camiseta de Algodão",
+      "preco": 50.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1718913936342-eaafff98834b?q=80&w=872&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "9": {
+      "id": "9",
+      "nome": "Calça Sarja",
+      "preco": 130.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1690366911138-bd50985e0379?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "10": {
+      "id": "10",
+      "nome": "Camisa Social Branca",
+      "preco": 110.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://images.unsplash.com/photo-1611619668823-13e82692eddc?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "11": {
+      "id": "11",
+      "nome": "Jaqueta de Couro",
+      "preco": 300.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1661313817350-1fa759c43a3b?q=80&w=917&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "12": {
+      "id": "12",
+      "nome": "Bermuda Moletom",
+      "preco": 70.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1715724793563-ba82fad6cf5d?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "13": {
+      "id": "13",
+      "nome": "Suéter de Tricô",
+      "preco": 140.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://plus.unsplash.com/premium_photo-1695339146296-ab03c0e6ae50?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "14": {
+      "id": "14",
+      "nome": "Terno Slim Fit",
+      "preco": 450.0,
+      "quantidade": 10,
+      "categoria": "Masculino",
+      "imagem": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=871&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "15": {
+      "id": "15",
+      "nome": "Conjunto Moletom Infantil",
+      "preco": 85.0,
+      "quantidade": 10,
+      "categoria": "Infantil",
+      "imagem": "https://images.unsplash.com/photo-1749560515162-977fe54dbf92?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "16": {
+      "id": "16",
+      "nome": "Vestido de Festa Infantil",
+      "preco": 110.0,
+      "quantidade": 10,
+      "categoria": "Infantil",
+      "imagem": "https://images.unsplash.com/photo-1620774760711-caa4c94d683a?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "17": {
+      "id": "17",
+      "nome": "Camiseta Estampa Dinossauro",
+      "preco": 40.0,
+      "quantidade": 10,
+      "categoria": "Infantil",
+      "imagem": "https://images.unsplash.com/photo-1633051246794-95b672a76da4?q=80&w=415&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "18": {
+      "id": "18",
+      "nome": "Calça Jeans Kids",
+      "preco": 90.0,
+      "quantidade": 10,
+      "categoria": "Infantil",
+      "imagem": "https://images.unsplash.com/photo-1789110854969-94d36ba7636e?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "19": {
+      "id": "19",
+      "nome": "Pijama Brilha no Escuro",
+      "preco": 65.0,
+      "quantidade": 10,
+      "categoria": "Infantil",
+      "imagem": "https://plus.unsplash.com/premium_photo-1682001267817-8a8adc7b1d21?q=80&w=847&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    "20": {
+      "id": "20",
+      "nome": "Jaqueta Corta-Vento Infantil",
+      "preco": 100.0,
+      "quantidade": 10,
+      "categoria": "Infantil",
+      "imagem": "https://plus.unsplash.com/premium_photo-1697612943446-ef0d34fd8a3a?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    }
+  },
+  "reservas": {
+    "d1386252": {
+      "6": 10,
+      "7": 10
+    }
+  }
+}

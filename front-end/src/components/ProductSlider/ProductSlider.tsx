@@ -2,18 +2,12 @@ import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import { ProductCard } from '../ProductCard/ProductCard';
+import type { Product } from '../../services/productService';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import './style.css';
-
-export interface Product {
-  id: string | number;
-  name: string;
-  price: number;
-  imageUrl: string;
-}
 
 interface ProductSliderProps {
   title?: string;
@@ -34,6 +28,7 @@ export const ProductSlider: React.FC<ProductSliderProps> = ({
         modules={[Navigation, Pagination]}
         spaceBetween={24}
         slidesPerView={4}
+        slidesPerGroup={4} 
         navigation
         pagination={{ clickable: true }}
         className="product-swiper"
@@ -42,9 +37,9 @@ export const ProductSlider: React.FC<ProductSliderProps> = ({
           <SwiperSlide key={product.id}>
             <ProductCard
               id={product.id}
-              name={product.name}
-              price={product.price}
-              imageUrl={product.imageUrl}
+              nome={product.nome}
+              preco={product.preco}
+              imagem={product.imagem}
               onBuy={onBuyProduct}
             />
           </SwiperSlide>

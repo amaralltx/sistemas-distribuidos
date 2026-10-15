@@ -3,23 +3,23 @@ import './style.css';
 
 interface ProductCardProps {
   id: string | number;
-  name: string;
-  price: number;
-  imageUrl: string;
+  nome: string;
+  preco: number;
+  imagem: string;
   onBuy?: (productId: string | number) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   id,
-  name,
-  price,
-  imageUrl,
+  nome,
+  preco,
+  imagem,
   onBuy,
 }) => {
   const formattedPrice = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
-  }).format(price);
+  }).format(preco);
 
   const handleBuyClick = () => {
     if (onBuy) {
@@ -32,14 +32,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div className="product-card">
       <img
-        src={imageUrl}
-        alt={`Foto do produto ${name}`}
+        src={imagem}
+        alt={`Foto do produto ${nome}`}
         className="product-image"
       />
 
       <div className="product-info">
-        <h3 className="product-title" title={name}>
-          {name}
+        <h3 className="product-title" title={nome}>
+          {nome}
         </h3>
         <p className="product-price">
           {formattedPrice}

@@ -61,6 +61,11 @@ export default function App() {
   useEffect(() => {
     if (!lastOrderId) return;
 
+    const terminalStatuses = new Set([
+      "Pedido Enviado.",
+      "Estoque Indisponível. Pedido Cancelado.",
+      "Pagamento Recusado. Pedido Cancelado.",
+    ]);
     const sseUrl = `http://localhost:5000/pedidos/${lastOrderId}/sse`;
     console.log(`%c[SSE] Conectando ao canal do Pedido #${lastOrderId}...`, "color: #3b82f6; font-weight: bold;");
 
@@ -78,13 +83,22 @@ export default function App() {
           "background: #1e293b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-weight: bold;",
           "color: #f8fafc; font-weight: bold;"
         );
+
+        // O backend encerra o stream após um status final. Fechar aqui
+        // evita que o EventSource interprete o encerramento como erro e
+        // tente reconectar automaticamente.
+        if (terminalStatuses.has(data.status)) {
+          eventSource.close();
+        }
       } catch (e) {
         console.log(`[SSE Raw Data - Pedido #${lastOrderId}]:`, event.data);
       }
     };
 
     eventSource.onerror = (err) => {
-      console.warn(`[SSE] Erro de conexão ou reconectando ao canal do Pedido #${lastOrderId}...`, err);
+      if (eventSource.readyState !== EventSource.CLOSED) {
+        console.warn(`[SSE] Erro de conexão ou reconectando ao canal do Pedido #${lastOrderId}...`, err);
+      }
     };
 
     // Função de limpeza ao desmontar ou trocar de pedido
@@ -99,31 +113,47 @@ export default function App() {
     0,
   );
 
-  const handleAddToCart = (productId: string | number) => {
-    const productToAdd = products.find(
-      (p) => String(p.id) === String(productId),
-    );
-    if (!productToAdd) return;
+  const handleAddToCart = (idDoProduto: string | number) => {
+    // Busca o produto no catálogo carregado da API
+    const produto = products.find(p => String(p.id) === String(idDoProduto));
+    
+    if (!produto) return;
 
+    // Verifica quantos itens desse produto o usuário já tem no carrinho
+    const itemJaNoCarrinho = cartItems.find(item => String(item.id) === String(idDoProduto));
+    const quantidadeAtualNoCarrinho = itemJaNoCarrinho ? itemJaNoCarrinho.quantity : 0; 
+
+    // Valida se a adição de +1 vai ultrapassar o limite do estoque
+    if (quantidadeAtualNoCarrinho + 1 > produto.quantidade) {
+      alert(`Estoque insuficiente! O produto "${produto.nome}" possui apenas ${produto.quantidade} unidade(s) disponível(is).`);
+      return; 
+    }
+
+    // Adiciona o item ao estado do carrinho
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find(
-        (item) => String(item.id) === String(productId),
-      );
-
-      if (existingItem) {
-        return prevItems.map((item) =>
-          String(item.id) === String(productId)
+      if (itemJaNoCarrinho) {
+        // Se já existe, apenas incrementa a quantidade (quantity)
+        return prevItems.map(item => 
+          String(item.id) === String(idDoProduto)
             ? { ...item, quantity: item.quantity + 1 }
-            : item,
+            : item
         );
+      } else {
+        // Se não existe, adiciona como um novo item no carrinho
+        return [
+          ...prevItems, 
+          { 
+            id: produto.id, 
+            nome: produto.nome, 
+            preco: produto.preco, 
+            imagem: produto.imagem,
+            quantity: 1 
+          }
+        ];
       }
-
-      return [...prevItems, { ...productToAdd, quantity: 1 }];
     });
-
-    setIsCartOpen(true);
   };
-
+  
   const handleUpdateQuantity = (id: string | number, delta: number) => {
     setCartItems((prevItems) =>
       prevItems
@@ -197,12 +227,35 @@ export default function App() {
           </div>
         )}
 
-        {!isLoading && !error && (
-          <ProductSlider
-            title="Produtos"
-            products={products}
-            onBuyProduct={handleAddToCart}
-          />
+{!isLoading && !error && (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <ProductSlider
+              title="Todos os Produtos"
+              products={products}
+              onBuyProduct={handleAddToCart}
+            />
+            
+            {/* Slider Categoria: Feminino */}
+            <ProductSlider
+              title="Moda Feminina"
+              products={products.filter((p) => p.categoria === "Feminino")}
+              onBuyProduct={handleAddToCart}
+            />
+
+            {/* Slider Categoria: Masculino */}
+            <ProductSlider
+              title="Moda Masculina"
+              products={products.filter((p) => p.categoria === "Masculino")}
+              onBuyProduct={handleAddToCart}
+            />
+
+            {/* Slider Categoria: Infantil */}
+            <ProductSlider
+              title="Moda Infantil"
+              products={products.filter((p) => p.categoria === "Infantil")}
+              onBuyProduct={handleAddToCart}
+            />
+          </div>
         )}
         <Newsletter />
 
@@ -220,6 +273,7 @@ export default function App() {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onCheckout={handleCheckout}
+        isSubmittingOrder={isSubmittingOrder}
       />
     </div>
   );
