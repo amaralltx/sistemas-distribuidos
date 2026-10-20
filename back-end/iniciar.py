@@ -7,7 +7,7 @@ pastas_ms = [
     "ms_estoque",
     "ms_pagamento",
     "ms_entrega",
-    # "ms_promocoes", 
+    "ms_promocoes",
     "ms_principal"
 ]
 

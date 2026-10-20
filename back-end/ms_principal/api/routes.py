@@ -145,3 +145,28 @@ def sse_pedido(id_pedido):
             'Access-Control-Allow-Origin': '*'
         }
     )
+
+@api_bp.route('/promocoes/interesse', methods=['POST', 'DELETE'])
+def interesse_promocao():
+    """POST registra e DELETE cancela o interesse em receber promoções por e-mail."""
+    dados = request.get_json(silent=True) or {}
+    email = (dados.get('email') or '').strip()
+
+    if '@' not in email:
+        return jsonify({"erro": "Informe um e-mail válido."}), 400
+
+    categorias = dados.get('categorias') or ([dados['categoria']] if dados.get('categoria') else [])
+    acao = 'registrar' if request.method == 'POST' else 'cancelar'
+
+    try:
+        publicador.publicar('interesse.promocao', json.dumps({
+            "acao": acao,
+            "email": email,
+            "categorias": categorias
+        }))
+        print(f"{TAG} Evento interesse.promocao ({acao}) publicado para {email}.")
+    except Exception as e:
+        print(f"{TAG} Falha ao publicar interesse.promocao: {e}")
+        return jsonify({"erro": "Não foi possível processar a solicitação agora."}), 503
+
+    return jsonify({"mensagem": f"Interesse ({acao}) enviado com sucesso."}), 202

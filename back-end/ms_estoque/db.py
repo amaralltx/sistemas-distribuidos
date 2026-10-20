@@ -1,19 +1,16 @@
 # ms_estoque/db.py
-# Camada de dados do MS Estoque, agora em arquivo JSON.
-# Nenhuma linha aqui conhece RabbitMQ ou HTTP.
 import json
 import os
 import threading
 
 ARQUIVO_DB = "estoque.json"
 
-# A API (Flask) e o consumidor (RabbitMQ) rodam em threads diferentes e mexem no
-# mesmo arquivo. O Lock garante que só uma thread por vez leia/altere/grave.
+# Flask e RabbitMQ rodam em threads diferentes e mexem no msm arquivo
+# Lock garante que só uma thread por vez leia/altere/grave.
 _lock = threading.Lock()
 
-# catálogo inicial (agora com a ordem: codigo, nome, preco, quantidade, categoria, imagem)
 CATALOGO_INICIAL = [
-    # (codigo, nome, preco, quantidade, categoria, imagem)
+    # (id, nome, preco, quantidade, categoria, imagem)
     ("1", "Vestido Floral", 120.00, 10, "Feminino", "https://plus.unsplash.com/premium_photo-1723535671118-ae4028123e40?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
     ("2", "Blusa de Seda", 89.90, 10, "Feminino", "https://plus.unsplash.com/premium_photo-1673384389447-5a4364e7c93b?q=80&w=388&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
     ("3", "Calça Jeans Skinny", 150.00, 10, "Feminino", "https://images.unsplash.com/photo-1714143136372-ddaf8b606da7?q=80&w=580&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"),
@@ -43,8 +40,8 @@ def _carregar():
 
 
 def _salvar(dados):
-    # grava num arquivo temporário e depois troca pelo definitivo (os.replace é atômico).
-    # Assim, se o processo cair no meio da gravação, o estoque.json não fica corrompido.
+    # grava num arquivo temporário e depois troca pelo definitivo
+    # se o processo cair no meio da gravação, o estoque.json não fica corrompido.
     tmp = ARQUIVO_DB + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=2)
@@ -58,10 +55,10 @@ def inicializar():
             return
         _salvar({
             "produtos": {
-                c: {"codigo": c, "nome": n, "preco": p, "quantidade": qtd, "categoria": cat, "imagem": img}
+                c: {"id": c, "nome": n, "preco": p, "quantidade": qtd, "categoria": cat, "imagem": img}
                 for c, n, p, qtd, cat, img in CATALOGO_INICIAL
             },
-            # o que foi reservado por pedido: {id_pedido: {codigo: quantidade}}
+            # o que foi reservado por pedido: {id_pedido: {id: quantidade}}
             "reservas": {},
         })
 

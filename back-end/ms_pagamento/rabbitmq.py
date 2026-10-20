@@ -13,7 +13,7 @@ class Publicador:
         self.nome_remetente = nome_remetente
         self.assinador = AssinaturaDigital()
         
-        parametros = pika.ConnectionParameters(host=RABBITMQ_HOST)
+        parametros = pika.ConnectionParameters(host=RABBITMQ_HOST, heartbeat=0)
         self.connection = pika.BlockingConnection(parametros)
         self.channel = self.connection.channel()
         

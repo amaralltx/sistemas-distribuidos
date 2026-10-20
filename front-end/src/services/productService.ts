@@ -36,3 +36,26 @@ export async function createOrder(cartItems: CartItem[]): Promise<{ id_pedido: s
 
   return await response.json();
 }
+
+async function enviarInteresse(method: "POST" | "DELETE", email: string, categorias: string[]): Promise<void> {
+  const response = await fetch(`${MS_PRINCIPAL_URL}/promocoes/interesse`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, categorias }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.erro || `Erro ao atualizar inscrição (${response.status})`);
+  }
+}
+
+export function registrarInteresse(email: string, categorias: string[]): Promise<void> {
+  return enviarInteresse("POST", email, categorias);
+}
+
+export function cancelarInteresse(email: string, categorias: string[]): Promise<void> {
+  return enviarInteresse("DELETE", email, categorias);
+}
