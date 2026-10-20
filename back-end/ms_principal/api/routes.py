@@ -1,12 +1,13 @@
 # api/routes.py
 import json
+import queue
 import uuid
-import time
 import requests
 from flask import Blueprint, jsonify, request, Response
 from config import TAG
 from domain.repository import pedidos_db
 from messaging.publisher import publicador
+from services import sse_manager
 
 api_bp = Blueprint('api', __name__)
 
@@ -16,7 +17,7 @@ URL_MS_ESTOQUE = "http://localhost:5001"
 def listar_produtos():
     """Endpoint REST que atua como API Gateway, buscando o catálogo do MS Estoque."""
     try:
-        # Faz a requisição HTTP GET para a API do Estoque
+        # requisição HTTP GET para a API do Estoque
         resposta = requests.get(f"{URL_MS_ESTOQUE}/produtos", timeout=5)
         resposta.raise_for_status() # Lança erro se o status não for 200 OK
         
@@ -37,11 +38,11 @@ def criar_pedido():
 
     itens_req = dados['itens']
     
-    # 1. Consulta o MS_Estoque para validar os preços e nomes reais dos produtos
+    # consulta o MS_Estoque para validar os preços e nomes reais dos produtos
     try:
         resposta = requests.get(f"{URL_MS_ESTOQUE}/produtos", timeout=5)
         resposta.raise_for_status()
-        # Cria um dicionário de acesso rápido indexado pelo código do produto
+        # cria um dict de acesso rápido indexado pelo código do produto
         catalogo_atual = {str(p["id"]): p for p in resposta.json()}
     except requests.exceptions.RequestException as e:
         print(f"{TAG} Erro ao validar produtos no MS Estoque: {e}")
@@ -50,14 +51,14 @@ def criar_pedido():
     produtos_payload = []
     valor_total = 0.0
 
-    # 2. Monta o payload garantindo a integridade dos dados (preço real vs preço enviado)
+    # monta o payload para cada item
     for item in itens_req:
         id = str(item.get('id') or item.get('id'))
         quantidade = int(item.get('quantidade') or item.get('quantity', 1))
         
         info_prod = catalogo_atual.get(id)
         
-        # Se o produto existe no banco do estoque, usa os dados oficiais
+        # se o produto existe no banco do estoque, usa os dados oficiais
         nome = info_prod['nome'] if info_prod else item.get('nome', 'Produto Desconhecido')
         preco = float(info_prod['preco']) if info_prod else float(item.get('preco') or 0.0)
         categoria = info_prod['categoria'] if info_prod else item.get('categoria', 'Geral')
@@ -72,10 +73,10 @@ def criar_pedido():
             "categoria": categoria
         })
 
-    # Gera identificador único para o pedido
+    # id único do pedido, 8 primeiros caracteres de um UUID
     id_pedido = str(uuid.uuid4())[:8]
 
-    # Salva no repositório thread-safe em memória
+    # salva no repositório thread-safe em memória
     pedidos_db.salvar(
         id_pedido,
         {
@@ -85,7 +86,16 @@ def criar_pedido():
         }
     )
 
-    # Monta payload para o evento 'pedido.criado'
+    # registra o evento inicial no SSE Manager para que clientes conectados recebam a atualização
+    sse_manager.registrar_evento(id_pedido, {
+        "seq": 0,
+        "id_pedido": id_pedido,
+        "status": "Pedido Criado.",
+        "routing_key": "pedido.criado",
+        "final": False,
+    })
+
+    # payload para o evento 'pedido.criado'
     payload_evento = {
         "id_pedido": id_pedido,
         "produtos": produtos_payload,
@@ -107,34 +117,38 @@ def criar_pedido():
 
 @api_bp.route('/pedidos/<id_pedido>/sse', methods=['GET'])
 def sse_pedido(id_pedido):
-    """Stream SSE que monitora alterações de status do pedido através de polling em memória."""
-    def stream():
-        status_anterior = None
-        
-        while True:
-            pedido = pedidos_db.obter(id_pedido)
-            
-            if pedido:
-                status_atual = pedido.get("status")
-                
-                # Transmite os dados ao cliente apenas se houver mudança de status
-                if status_atual != status_anterior:
-                    status_anterior = status_atual
-                    payload = json.dumps({
-                        "id_pedido": id_pedido,
-                        "status": status_atual
-                    })
-                    yield f"data: {payload}\n\n"
-                    
-                    # Interrompe o loop do gerador ao atingir um estado conclusivo
-                    if status_atual in [
-                        "Pedido Enviado.",
-                        "Estoque Indisponível. Pedido Cancelado.",
-                        "Pagamento Recusado. Pedido Cancelado."
-                    ]:
-                        break
+    """Stream SSE: envia o histórico do pedido e depois os eventos novos ao vivo."""
+    if pedidos_db.obter(id_pedido) is None:
+        return jsonify({"erro": "Pedido não encontrado."}), 404
 
-            time.sleep(1)
+    def stream():
+        fila, historico = sse_manager.assinar(id_pedido)
+        ultimo_seq = -1
+        try:
+            # envia tudo que já aconteceu
+            for evento in historico:
+                ultimo_seq = evento["seq"]
+                yield f"data: {json.dumps(evento)}\n\n"
+                if evento["final"]:
+                    return
+
+            # fica ouvindo os eventos novos
+            while True:
+                try:
+                    evento = fila.get(timeout=15)
+                except queue.Empty:
+                    # comentário SSE: mantém a conexão viva e detecta cliente desconectado
+                    yield ": keepalive\n\n"
+                    continue
+
+                if evento["seq"] <= ultimo_seq:
+                    continue  # já foi enviado pelo histórico
+                ultimo_seq = evento["seq"]
+                yield f"data: {json.dumps(evento)}\n\n"
+                if evento["final"]:
+                    return
+        finally:
+            sse_manager.cancelar_assinatura(id_pedido, fila)
 
     return Response(
         stream(),
@@ -142,10 +156,8 @@ def sse_pedido(id_pedido):
         headers={
             'Cache-Control': 'no-cache',
             'X-Accel-Buffering': 'no',
-            'Access-Control-Allow-Origin': '*'
-        }
+        },
     )
-
 @api_bp.route('/promocoes/interesse', methods=['POST', 'DELETE'])
 def interesse_promocao():
     """POST registra e DELETE cancela o interesse em receber promoções por e-mail."""

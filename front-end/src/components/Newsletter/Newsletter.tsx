@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { registrarInteresse, cancelarInteresse } from '../../services/productService';
+import { registrarInteresse, cancelarInteresse } from '../../services/api';
 import './style.css';
 
 export const Newsletter: React.FC = () => {

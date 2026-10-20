@@ -1,31 +1,51 @@
 # services/sse_manager.py
+# Gerencia as conexões SSE: quem está ouvindo cada pedido e o histórico de eventos.
 import queue
 import threading
 
-sse_subscribers = {}
-sse_lock = threading.Lock()
+# id_pedido -> lista de filas (uma por conexão SSE aberta)
+_subscritores = {}
+# id_pedido -> lista de eventos já ocorridos (para reenviar a quem conectar tarde)
+_historico = {}
+_lock = threading.Lock()
 
-def registrar_subscritor(id_pedido):
-    """Cria e registra uma fila de eventos para a conexão SSE de um pedido."""
-    q = queue.Queue()
-    with sse_lock:
-        if id_pedido not in sse_subscribers:
-            sse_subscribers[id_pedido] = []
-        sse_subscribers[id_pedido].append(q)
-    return q
 
-def desregistrar_subscritor(id_pedido, q):
-    """Remove a fila de eventos quando a conexão do cliente é encerrada."""
-    with sse_lock:
-        if id_pedido in sse_subscribers:
-            if q in sse_subscribers[id_pedido]:
-                sse_subscribers[id_pedido].remove(q)
-            if not sse_subscribers[id_pedido]:
-                del sse_subscribers[id_pedido]
+def registrar_evento(id_pedido, evento):
+    """Guarda o evento no histórico e o envia a todos os clientes conectados."""
+    with _lock:
+        _historico.setdefault(id_pedido, []).append(evento)
+        filas = list(_subscritores.get(id_pedido, []))
+    for fila in filas:
+        fila.put(evento)
 
-def notificar_sse(id_pedido, dados_evento):
-    """Encaminha o novo status do pedido para todas as conexões SSE ativas do pedido."""
-    with sse_lock:
-        if id_pedido in sse_subscribers:
-            for q in sse_subscribers[id_pedido]:
-                q.put(dados_evento)
+
+def assinar(id_pedido):
+    """Cria uma fila para uma nova conexão e devolve (fila, eventos já ocorridos).
+    A fila é criada e o histórico é copiado no mesmo bloqueio, então nenhum
+    evento se perde entre as duas operações."""
+    fila = queue.Queue()
+    with _lock:
+        _subscritores.setdefault(id_pedido, []).append(fila)
+        historico = list(_historico.get(id_pedido, []))
+    return fila, historico
+
+
+def cancelar_assinatura(id_pedido, fila):
+    """Remove a fila quando o cliente desconecta."""
+    with _lock:
+        filas = _subscritores.get(id_pedido, [])
+        if fila in filas:
+            filas.remove(fila)
+        if not filas:
+            _subscritores.pop(id_pedido, None)
+
+
+def existe_historico(id_pedido):
+    with _lock:
+        return id_pedido in _historico
+
+
+def apagar_historico(id_pedido):
+    """Libera a memória de um pedido que terminou."""
+    with _lock:
+        _historico.pop(id_pedido, None)

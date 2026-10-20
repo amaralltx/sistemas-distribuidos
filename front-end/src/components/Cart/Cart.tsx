@@ -1,20 +1,13 @@
 import React from 'react';
+import type { CartItem } from '../../types';
 import './style.css';
-
-export interface CartItem {
-  id: string | number;
-  nome: string;
-  preco: number;
-  imagem: string;
-  quantity: number;
-}
 
 interface CartProps {
   isOpen: boolean;
   onClose: () => void;
   items: CartItem[];
-  onUpdateQuantity: (id: string | number, delta: number) => void;
-  onRemoveItem: (id: string | number) => void;
+  onUpdateQuantity: (id: string, delta: number) => void;
+  onRemoveItem: (id: string) => void;
   onCheckout: () => void;
   isSubmittingOrder: boolean;
 }
